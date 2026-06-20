@@ -1,0 +1,47 @@
+{
+  "_note": "All names, IDs, addresses, dates and data in this file are synthetic and fictional. Street names use the placeholder 'Muster...' on purpose, and meter serials are clearly non-real. Use these to drive your agent via per-call dynamic variables. Never use real customer data.",
+  "cases": [
+    {
+      "id": "CASE-A",
+      "case_title": "Marktlokation nimmt nicht teil",
+      "lieferant": "Nomos GmbH",
+      "vnb_name": "Bayern Werknetz GmbH",
+      "malo_id": "50312478901",
+      "lieferstelle": "Musterstraße 4, Mainz-Kastel",
+      "zaehlernummer": "1ESY9000010001",
+      "anmeldung_datum": "12.06.2026",
+      "lieferbeginn": "14.07.2027",
+      "statustext": "Netzanmeldung abgelehnt: 'Marktlokation nimmt nicht teil'.",
+      "symptom": "We sent a registration and were given this MaLo, but it bounces with 'Marktlokation nimmt nicht teil'. The automation cannot tell us why.",
+      "goal": "Find out the real reason and the next step. (Expected: the meter was a Baustromzähler, removed on 18.05, so a new Anlage is needed and we go back to the customer. No ticket number required.)"
+    },
+    {
+      "id": "CASE-B",
+      "case_title": "Reminder / Nachfassen",
+      "lieferant": "Nomos GmbH",
+      "vnb_name": "Rheinland Netz AG",
+      "malo_id": "48820037615",
+      "lieferstelle": "Musterstraße 211, Köln-Ehrenfeld",
+      "zaehlernummer": "1EMH9000020002",
+      "anmeldung_datum": "02.06.2026",
+      "lieferbeginn": "01.08.2026",
+      "statustext": "APERAK am 03.06.2026 erhalten, aber keine Anmeldebestätigung; Frist verstrichen.",
+      "symptom": "We sent a registration, got the automated receipt, but never the confirmation, and the deadline has passed. Is it lost? Is it stuck?",
+      "goal": "Confirm the registration was received and is in process, learn why it stalled, get a Vorgangsnummer, and confirm no resubmission is needed."
+    },
+    {
+      "id": "CASE-C",
+      "case_title": "MaLo-Ident",
+      "lieferant": "Nomos GmbH",
+      "vnb_name": "Elbe Energienetze GmbH",
+      "malo_id": "71005523498",
+      "lieferstelle": "Musterweg 28a, 2. OG links, Hamburg-Altona",
+      "zaehlernummer": "1ESY9000030003",
+      "anmeldung_datum": "",
+      "lieferbeginn": "15.07.2026",
+      "statustext": "Identifikation lieferte keine passende/eindeutige MaLo für die Adresse.",
+      "symptom": "The MaLo we hold doesn't match the address. The building has several delivery points, so the address alone is ambiguous.",
+      "goal": "Get the correct MaLo. (The customer's Zählernummer disambiguates it.) Read the corrected MaLo back digit by digit before closing."
+    }
+  ]
+}

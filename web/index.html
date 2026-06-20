@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nomos · Clearing Calls</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #181b22; --panel2: #1f232c; --line: #2a2f3a;
+    --text: #e6e8ee; --muted: #9aa3b2; --accent: #5b8cff; --good: #38b88a;
+    --warn: #e0a23b; --bad: #e05a5a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: var(--bg); color: var(--text); }
+  header { padding: 18px 24px; border-bottom: 1px solid var(--line); display:flex; align-items:baseline; gap:12px;}
+  header h1 { font-size: 17px; margin: 0; }
+  header span { color: var(--muted); font-size: 13px; }
+  .wrap { display: grid; grid-template-columns: 360px 1fr; gap: 0; height: calc(100vh - 59px); }
+  .col { overflow-y: auto; padding: 18px; }
+  .col.left { border-right: 1px solid var(--line); }
+  .case { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+          padding: 14px; margin-bottom: 12px; }
+  .case h3 { margin: 0 0 4px; font-size: 14px; }
+  .case .vnb { color: var(--accent); font-size: 12px; }
+  .case .sym { color: var(--muted); font-size: 12px; margin: 8px 0; }
+  .row { display: flex; gap: 8px; margin-top: 8px; }
+  button { background: var(--accent); color: white; border: 0; border-radius: 7px;
+           padding: 7px 12px; font-size: 13px; cursor: pointer; }
+  button.ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
+  button:disabled { opacity: .5; cursor: default; }
+  label.chk { color: var(--muted); font-size: 12px; display:flex; align-items:center; gap:6px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+           padding: 16px; margin-bottom: 16px; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em;
+              color: var(--muted); margin: 0 0 12px; }
+  .status { display:inline-block; padding: 2px 9px; border-radius: 20px; font-size: 12px; }
+  .s-resolved { background: rgba(56,184,138,.15); color: var(--good); }
+  .s-partial  { background: rgba(224,162,59,.15); color: var(--warn); }
+  .s-needs_human { background: rgba(224,90,90,.15); color: var(--bad); }
+  .transcript { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  .t-agent { color: #cdd6f4; } .t-clerk { color: #a6e3a1; }
+  .t-line { padding: 3px 0; }
+  .t-line b { color: var(--muted); }
+  pre { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+        padding: 12px; overflow-x: auto; font-size: 12px; }
+  .kv { display: grid; grid-template-columns: 130px 1fr; gap: 4px 12px; font-size: 13px; }
+  .kv .k { color: var(--muted); }
+  .note { background: var(--panel2); border-left: 3px solid var(--accent); padding: 10px 12px;
+          border-radius: 4px; margin-top: 6px; }
+  .note .gloss { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .trig { background: rgba(91,140,255,.1); border: 1px solid var(--line); border-radius: 6px;
+          padding: 8px 10px; font-size: 12px; margin-top: 6px; font-family: ui-monospace, monospace; }
+  .empty { color: var(--muted); font-style: italic; }
+  .digits { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Nomos · Clearing Calls</h1>
+  <span>AI voice agent for the German energy market — clear a stuck case, close the loop.</span>
+</header>
+<div class="wrap">
+  <div class="col left">
+    <label class="chk"><input type="checkbox" id="dryrun" checked /> Dry run (prepare without dialing)</label>
+    <div id="cases" style="margin-top:12px"></div>
+  </div>
+  <div class="col right">
+    <div class="panel">
+      <h2>Live call</h2>
+      <div id="live"><span class="empty">Start a call from the left.</span></div>
+    </div>
+    <div class="panel">
+      <h2>Structured result · back-office note · triggered action</h2>
+      <div id="result"><span class="empty">No result yet.</span></div>
+    </div>
+  </div>
+</div>
+<script>
+const $ = (s) => document.querySelector(s);
+let currentCall = null, pollTimer = null;
+
+async function loadCases() {
+  const cases = await (await fetch('/cases')).json();
+  $('#cases').innerHTML = cases.map(c => `
+    <div class="case">
+      <div class="vnb">${c.vnb_name}</div>
+      <h3>${c.id} · ${c.case_title}</h3>
+      <div class="sym">${c.symptom || ''}</div>
+      <div class="row">
+        <button onclick="startCall('${c.id}')">▶ Start call</button>
+        <button class="ghost" onclick="showVars('${c.id}')">Vars</button>
+      </div>
+    </div>`).join('');
+}
+
+async function showVars(id) {
+  const v = await (await fetch(`/cases/${id}/variables`)).json();
+  $('#live').innerHTML = `<div class="kv">
+    <div class="k">MaLo (spoken)</div><div class="digits">${v.malo_id_spoken}</div>
+    <div class="k">Zählernummer</div><div class="digits">${v.zaehlernummer_spoken}</div>
+    <div class="k">Anmeldung</div><div>${v.anmeldung_datum_spoken}</div>
+    <div class="k">Lieferbeginn</div><div>${v.lieferbeginn_spoken}</div>
+    <div class="k">Ziel</div><div>${v.goal}</div>
+  </div>`;
+}
+
+async function startCall(id) {
+  const dry = $('#dryrun').checked;
+  const r = await (await fetch('/calls', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ case_id: id, dry_run: dry })
+  })).json();
+  if (r.detail) { $('#live').innerHTML = `<span class="s-needs_human">${r.detail}</span>`; return; }
+  currentCall = r.call_id;
+  $('#result').innerHTML = '<span class="empty">Call in progress…</span>';
+  poll();
+  if (dry) {
+    $('#live').innerHTML = `<p>Prepared call <code>${r.call_id}</code> (dry run — no dial).</p>
+      <p class="empty">Dynamic variables ready. In a live run the agent now navigates the IVR and speaks.</p>
+      <button class="ghost" onclick="finalizeCall()">Simulate finalize →</button>`;
+  }
+}
+
+async function poll() {
+  if (pollTimer) clearTimeout(pollTimer);
+  if (!currentCall) return;
+  try {
+    const live = await (await fetch(`/calls/${currentCall}/live`)).json();
+    const t = (live.transcript || []).map(x =>
+      `<div class="t-line t-${x.role.includes('agent')?'agent':'clerk'}"><b>${x.role}:</b> ${x.text}</div>`).join('');
+    if (t) $('#live').querySelector('.transcript')?.remove();
+    if (t && !$('#live').innerHTML.includes('transcript'))
+      $('#live').insertAdjacentHTML('beforeend', `<div class="transcript">${t}</div>`);
+    if ((live.status||'').startsWith('twilio:completed') || live.status === 'ended') finalizeCall();
+  } catch (e) {}
+  pollTimer = setTimeout(poll, 1500);
+}
+
+async function finalizeCall() {
+  if (!currentCall) return;
+  const r = await (await fetch(`/calls/${currentCall}/finalize`, {method:'POST'})).json();
+  if (r.detail) return;
+  renderResult(r);
+  if (pollTimer) clearTimeout(pollTimer);
+}
+
+function renderResult(r) {
+  const trig = (r.triggered||[]).map(t => `<div class="trig">⚡ ${t}</div>`).join('') ||
+    '<span class="empty">none</span>';
+  $('#result').innerHTML = `
+    <div class="kv">
+      <div class="k">Case</div><div>${r.case_id}</div>
+      <div class="k">Status</div><div><span class="status s-${r.status}">${r.status}</span></div>
+      <div class="k">Reason</div><div>${r.reason || '—'}</div>
+      <div class="k">Meter</div><div>${r.meter_status}</div>
+      <div class="k">Corrected MaLo</div><div class="digits">${r.corrected_malo || '—'}</div>
+      <div class="k">Vorgangsnummer</div><div class="digits">${r.vorgangsnummer || '—'}</div>
+      <div class="k">Next action</div><div>${r.next_action}</div>
+      <div class="k">Confidence</div><div>${r.confidence}</div>
+    </div>
+    <div class="note"><b>Notiz (DE):</b> ${r.note_de}
+      <div class="gloss"><b>EN:</b> ${r.note_en_gloss}</div></div>
+    <h2 style="margin-top:16px">Triggered</h2>${trig}`;
+}
+
+loadCases();
+</script>
+</body>
+</html>
