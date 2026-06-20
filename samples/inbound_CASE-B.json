@@ -1,0 +1,10 @@
+{
+  "case_id": "CASE-B",
+  "call_id": "inbound-CASE-B",
+  "status": "resolved",
+  "reason": "Anmeldung ist im System und wird bearbeitet; keine erneute Anmeldung nötig",
+  "vorgangsnummer": "KL202644817",
+  "meter_status": "unknown",
+  "next_action": "await_processing",
+  "confidence": 0.88
+}

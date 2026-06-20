@@ -1,0 +1,14 @@
+{
+  "case_id": "CASE-B",
+  "call_id": "synthetic-CASE-B",
+  "status": "resolved",
+  "reason": "Anmeldung lag korrekt vor, war nur noch nicht bearbeitet; keine Neueinreichung nötig",
+  "corrected_malo": null,
+  "vorgangsnummer": "KL202644817",
+  "meter_status": "unknown",
+  "next_action": "await_processing",
+  "confidence": 0.9,
+  "note_de": "Anruf bei Rheinland Netz AG zur Lieferstelle Musterstraße 211, Köln-Ehrenfeld. Ergebnis: Anmeldung lag korrekt vor, war nur noch nicht bearbeitet; keine Neueinreichung nötig. Vorgangsnummer: KL202644817. Nächster Schritt: Anmeldung liegt korrekt vor und wird bearbeitet, wird verfolgt.",
+  "note_en_gloss": "Call to Rheinland Netz AG re delivery point Musterstraße 211, Köln-Ehrenfeld. Outcome: Registration is present and in process; no resubmission needed. Reference no.: KL202644817. Next step: Registration is valid and in process; tracking it.",
+  "transcript_ref": "synthetic-CASE-B"
+}

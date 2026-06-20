@@ -33,6 +33,13 @@ class Settings:
 
         self.public_base_url = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
         self.store_path = os.getenv("STORE_PATH", "./data/results.json")
+        self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
+        self.summary_model = os.getenv("SUMMARY_MODEL", "gpt-4o")
+        self.email_mode = os.getenv("EMAIL_MODE", "mock")
+        self.resend_api_key = os.getenv("RESEND_API_KEY", "")
+        self.email_from = os.getenv("EMAIL_FROM", "Nomos Voice Agent <noreply@example.com>")
+        self.email_to_nomos = os.getenv("EMAIL_TO_NOMOS", "")
+        self.email_to_test = os.getenv("EMAIL_TO_TEST", "")
 
         # The keypad digit that reaches a human on the practice line's menu.
         # For the real practice clerk there is ONE menu; per-call overrides are used

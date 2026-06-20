@@ -1,0 +1,9 @@
+{
+  "case_id": "CASE-A",
+  "call_id": "inbound-CASE-A",
+  "status": "resolved",
+  "reason": "Baustromzähler am 18.05. ausgebaut; neue Anlage muss beim Kunden geklärt werden",
+  "meter_status": "removed",
+  "next_action": "create_new_anlage",
+  "confidence": 0.87
+}

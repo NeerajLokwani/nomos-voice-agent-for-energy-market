@@ -1,0 +1,14 @@
+{
+  "case_id": "CASE-C",
+  "call_id": "synthetic-CASE-C",
+  "status": "resolved",
+  "reason": "Zählernummer hat die Lieferstelle eindeutig gemacht; korrigierte MaLo bestätigt",
+  "corrected_malo": "71005523911",
+  "vorgangsnummer": null,
+  "meter_status": "unknown",
+  "next_action": "trigger_signup_step",
+  "confidence": 0.9,
+  "note_de": "Anruf bei Elbe Energienetze GmbH zur Lieferstelle Musterweg 28a, 2. OG links, Hamburg-Altona. Ergebnis: Zählernummer hat die Lieferstelle eindeutig gemacht; korrigierte MaLo bestätigt. Korrigierte MaLo: 71005523911. Nächster Schritt: Korrigierte MaLo übernommen, Anmeldung wird neu angestoßen.",
+  "note_en_gloss": "Call to Elbe Energienetze GmbH re delivery point Musterweg 28a, 2. OG links, Hamburg-Altona. Outcome: Meter number disambiguated the delivery point; corrected MaLo confirmed. Corrected MaLo: 71005523911. Next step: Corrected MaLo recorded; re-triggering the registration.",
+  "transcript_ref": "synthetic-CASE-C"
+}

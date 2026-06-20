@@ -1,8 +1,10 @@
 .venv/
 __pycache__/
 *.pyc
+*.log.json
 .env
 data/
+outbox/
 .pytest_cache/
 
 # Local agent tooling (re-installable via `npx skills add`) — not project code

@@ -1,0 +1,14 @@
+{
+  "case_id": "CASE-A",
+  "call_id": "synthetic-CASE-A",
+  "status": "resolved",
+  "reason": "Baustromzähler am 18.05. ausgebaut, alte MaLo tot, neue Anlage nötig",
+  "corrected_malo": null,
+  "vorgangsnummer": null,
+  "meter_status": "removed",
+  "next_action": "create_new_anlage",
+  "confidence": 0.9,
+  "note_de": "Anruf bei Bayern Werknetz GmbH zur Lieferstelle Musterstraße 4, Mainz-Kastel. Ergebnis: Baustromzähler am 18.05. ausgebaut, alte MaLo tot, neue Anlage nötig. Zähler ist ausgebaut. Nächster Schritt: Neue Anlage erforderlich, zurück zum Kunden.",
+  "note_en_gloss": "Call to Bayern Werknetz GmbH re delivery point Musterstraße 4, Mainz-Kastel. Outcome: Temporary construction meter removed; new connection needed. Next step: New connection needed; back to the customer.",
+  "transcript_ref": "synthetic-CASE-A"
+}

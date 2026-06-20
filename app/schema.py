@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -48,5 +48,23 @@ class CallResult(BaseModel):
     note_en_gloss: str = Field("", description="Short English gloss for judges/demo.")
     transcript_ref: Optional[str] = None
     triggered: List[str] = Field(default_factory=list, description="Mock services fired.")
+    reconciliation: Optional[dict] = None
+    email_status: Optional[str] = None
+    email_ref: Optional[str] = None
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
+
+
+class ReconciliationItem(BaseModel):
+    field: str
+    old: str = ""
+    new: str = ""
+    kind: str
+
+
+class ReconciliationReport(BaseModel):
+    case_id: str
+    items: List[ReconciliationItem] = Field(default_factory=list)
+    verification_status: Literal["verifiziert", "abweichung", "mensch_noetig"]
+    summary_points: List[str] = Field(default_factory=list)
+    confidence: float = Field(0.0, ge=0.0, le=1.0)

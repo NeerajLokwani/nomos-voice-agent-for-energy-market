@@ -1,8 +1,4 @@
-"""FastAPI entrypoint.
-
-Scaffold stage: health + case listing + dynamic-variable preview. Call init,
-Twilio/IVR webhooks, live tools, and the post-call pipeline are added in later steps.
-"""
+"""FastAPI entrypoint für Dashboard, Telefonie-Webhooks und Abschluss-Pipeline."""
 from __future__ import annotations
 
 import json

@@ -148,6 +148,10 @@ async function finalizeCall() {
 function renderResult(r) {
   const trig = (r.triggered||[]).map(t => `<div class="trig">⚡ ${t}</div>`).join('') ||
     '<span class="empty">none</span>';
+  const rec = r.reconciliation || null;
+  const recItems = rec && rec.items ? rec.items.map(i =>
+    `<div class="trig">${i.field}: ${i.kind} · bekannt: ${i.old || 'offen'} · neu: ${i.new || 'offen'}</div>`
+  ).join('') : '<span class="empty">none</span>';
   $('#result').innerHTML = `
     <div class="kv">
       <div class="k">Case</div><div>${r.case_id}</div>
@@ -158,9 +162,12 @@ function renderResult(r) {
       <div class="k">Vorgangsnummer</div><div class="digits">${r.vorgangsnummer || '—'}</div>
       <div class="k">Next action</div><div>${r.next_action}</div>
       <div class="k">Confidence</div><div>${r.confidence}</div>
+      <div class="k">Verification</div><div>${rec ? rec.verification_status : '—'}</div>
+      <div class="k">Mail</div><div>${r.email_status || '—'}${r.email_ref ? ` · ${r.email_ref}` : ''}</div>
     </div>
     <div class="note"><b>Notiz (DE):</b> ${r.note_de}
       <div class="gloss"><b>EN:</b> ${r.note_en_gloss}</div></div>
+    <h2 style="margin-top:16px">Reconciliation</h2>${recItems}
     <h2 style="margin-top:16px">Triggered</h2>${trig}`;
 }
 

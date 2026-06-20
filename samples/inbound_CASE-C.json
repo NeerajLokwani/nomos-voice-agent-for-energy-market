@@ -1,0 +1,10 @@
+{
+  "case_id": "CASE-C",
+  "call_id": "inbound-CASE-C",
+  "status": "resolved",
+  "reason": "Zählernummer passt zur korrigierten MaLo; Nummer wurde zurückgelesen und bestätigt",
+  "corrected_malo": "71005523911",
+  "meter_status": "unknown",
+  "next_action": "trigger_signup_step",
+  "confidence": 0.9
+}

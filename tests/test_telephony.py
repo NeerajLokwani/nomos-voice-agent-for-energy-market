@@ -53,12 +53,53 @@ def test_start_call_dry_run_returns_dynamic_variables():
     assert dv["malo_id_spoken"].startswith("fünf, null, drei")
 
 
+def test_start_call_live_ruft_place_call_ohne_echten_anruf(monkeypatch):
+    captured = {}
+
+    def fake_place_call(call_id, ivr_digit=None):
+        captured["call_id"] = call_id
+        captured["ivr_digit"] = ivr_digit
+        return "CA_TEST_SID"
+
+    monkeypatch.setattr("app.main.place_call", fake_place_call)
+
+    r = client.post("/calls", json={"case_id": "CASE-C", "ivr_digit": "2", "dry_run": False})
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "dialing"
+    assert body["twilio_sid"] == "CA_TEST_SID"
+    assert captured["call_id"] == body["call_id"]
+    assert captured["ivr_digit"] == "2"
+    live = client.get(f"/calls/{body['call_id']}/live").json()
+    assert live["status"] == "dialing"
+    assert live["twilio_sid"] == "CA_TEST_SID"
+
+
 def test_voice_endpoint_serves_twiml_for_prepared_call():
     call_id = client.post("/calls", json={"case_id": "CASE-C", "dry_run": True}).json()["call_id"]
     r = client.get(f"/voice/{call_id}?ivr_digit=2")
     assert r.status_code == 200
     assert "application/xml" in r.headers["content-type"]
     assert 'digits="ww2"' in r.text
+
+
+def test_voice_endpoint_accepts_twilio_post():
+    call_id = client.post("/calls", json={"case_id": "CASE-A", "dry_run": True}).json()["call_id"]
+    r = client.post(f"/voice/{call_id}", data={})
+    assert r.status_code == 200
+    assert "<Response>" in r.text
+    assert "<Stream" in r.text
+
+
+def test_twilio_status_callback_setzt_live_status():
+    call_id = client.post("/calls", json={"case_id": "CASE-B", "dry_run": True}).json()["call_id"]
+    r = client.post(f"/twilio/status/{call_id}", data={"CallStatus": "completed"})
+
+    assert r.status_code == 200
+    assert r.json() == {"ok": True}
+    live = client.get(f"/calls/{call_id}/live").json()
+    assert live["status"] == "twilio:completed"
 
 
 def test_start_call_unknown_case_404():

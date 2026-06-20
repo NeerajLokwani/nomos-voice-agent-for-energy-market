@@ -9,10 +9,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
+from .email_agent import send_summary_email
 from .fixtures import get_case
 from .notes import build_notes
+from .reconcile import reconcile
 from .schema import CallResult, CallStatus, MeterStatus, NextAction
 from .store import get_live, save_result
+from .summary import build_email_summary
 from .triggers import mock_email_agent, mock_signup_step, mock_track_vorgang
 
 
@@ -104,6 +107,20 @@ def finalize_call(call_id: str) -> CallResult:
         ended_at=datetime.now(timezone.utc),
     )
     _fire_triggers(case_id, result)
+
+    report = reconcile(case, result)
+    result.reconciliation = report.model_dump(mode="json")
+    summary = build_email_summary(case, result, report)
+    try:
+        result.email_ref = send_summary_email(
+            summary["subject"],
+            summary["body_text"],
+            summary.get("body_html"),
+        )
+        result.email_status = "verschickt"
+    except Exception as exc:
+        result.email_status = f"fehler: {exc.__class__.__name__}"
+
     save_result(result)
     return result
 
