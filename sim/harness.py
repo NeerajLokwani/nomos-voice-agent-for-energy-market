@@ -22,7 +22,9 @@ from app.agent_prompt import AGENT_SYSTEM_PROMPT, FIRST_MESSAGE, render
 from app.fixtures import build_dynamic_variables, get_case
 from .personas import PERSONAS, render_clerk_prompt
 
-MODEL = os.getenv("SIM_MODEL", "gpt-4o")
+# gpt-5.5 is the current flagship; great German + instruction-following for the
+# two-sided role-play. Override with SIM_MODEL (e.g. gpt-5.4-mini for cheaper/faster runs).
+MODEL = os.getenv("SIM_MODEL", "gpt-5.5")
 MAX_TURNS = int(os.getenv("SIM_MAX_TURNS", "16"))
 
 
@@ -38,9 +40,11 @@ def _client():
 
 def _say(client, system: str, history: List[dict]) -> str:
     # OpenAI takes the system prompt as the first message in the list.
+    # GPT-5 models use max_completion_tokens (not max_tokens); leave headroom for the
+    # model's internal reasoning tokens so the visible reply isn't truncated.
     messages = [{"role": "system", "content": system}, *history]
     resp = client.chat.completions.create(
-        model=MODEL, max_tokens=400, messages=messages
+        model=MODEL, max_completion_tokens=2000, messages=messages
     )
     return (resp.choices[0].message.content or "").strip()
 

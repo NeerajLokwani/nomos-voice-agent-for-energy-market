@@ -20,6 +20,7 @@ from .store import append_transcript, get_live, list_results, set_live
 from pathlib import Path
 
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .telephony import build_call_twiml, place_call
 from .tools_routes import router as tools_router
@@ -28,12 +29,22 @@ from .triggers import list_triggers
 app = FastAPI(title="Nomos Clearing-Calls Voice Agent")
 app.include_router(tools_router)
 
-_WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+_ROOT = Path(__file__).resolve().parent.parent
+_REACT_DIST = _ROOT / "frontend" / "dist"   # built React app (npm run build)
+_LEGACY_WEB = _ROOT / "web"                  # fallback single-file dashboard
+
+# Serve the React build's hashed assets when present.
+if (_REACT_DIST / "assets").is_dir():
+    app.mount("/assets", StaticFiles(directory=_REACT_DIST / "assets"), name="assets")
 
 
 @app.get("/")
 def dashboard() -> FileResponse:
-    return FileResponse(_WEB_DIR / "index.html")
+    """Serve the React dashboard if built, else the legacy single-file dashboard."""
+    react_index = _REACT_DIST / "index.html"
+    if react_index.is_file():
+        return FileResponse(react_index)
+    return FileResponse(_LEGACY_WEB / "index.html")
 
 
 class StartCallRequest(BaseModel):

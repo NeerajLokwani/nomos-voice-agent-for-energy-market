@@ -5,6 +5,12 @@ __pycache__/
 data/
 .pytest_cache/
 
-# Local agent tooling (re-installable via `npx skills add`) — not project code
+# Frontend (React/Vite/TypeScript)
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# Local agent / IDE tooling (machine-specific, re-installable) — not project code
 .agents/
+.claude/
 skills-lock.json

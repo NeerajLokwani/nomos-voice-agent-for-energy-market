@@ -3,123 +3,311 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Nomos · Clearing Calls</title>
+<title>nomos · Clearing Calls</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #0f1115; --panel: #181b22; --panel2: #1f232c; --line: #2a2f3a;
-    --text: #e6e8ee; --muted: #9aa3b2; --accent: #5b8cff; --good: #38b88a;
-    --warn: #e0a23b; --bad: #e05a5a;
+    --bg: #f6f8fb; --surface: #ffffff; --surface-2: #f0f3f8;
+    --ink: #0a1b2e; --muted: #5a6b7b; --faint: #8c9bab; --line: #e4e9f0;
+    --primary: #1d5bff; --primary-ink: #0b3fcc; --primary-glow: rgba(29,91,255,.12);
+    --live: #0fb5a6; --good: #10b981; --warn: #f59e0b; --bad: #ef4444;
+    --radius: 14px; --radius-sm: 9px;
+    --display: "Space Grotesk", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --shadow: 0 1px 2px rgba(10,27,46,.04), 0 8px 24px rgba(10,27,46,.05);
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-         background: var(--bg); color: var(--text); }
-  header { padding: 18px 24px; border-bottom: 1px solid var(--line); display:flex; align-items:baseline; gap:12px;}
-  header h1 { font-size: 17px; margin: 0; }
-  header span { color: var(--muted); font-size: 13px; }
-  .wrap { display: grid; grid-template-columns: 360px 1fr; gap: 0; height: calc(100vh - 59px); }
-  .col { overflow-y: auto; padding: 18px; }
-  .col.left { border-right: 1px solid var(--line); }
-  .case { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-          padding: 14px; margin-bottom: 12px; }
-  .case h3 { margin: 0 0 4px; font-size: 14px; }
-  .case .vnb { color: var(--accent); font-size: 12px; }
-  .case .sym { color: var(--muted); font-size: 12px; margin: 8px 0; }
-  .row { display: flex; gap: 8px; margin-top: 8px; }
-  button { background: var(--accent); color: white; border: 0; border-radius: 7px;
-           padding: 7px 12px; font-size: 13px; cursor: pointer; }
-  button.ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--body); font-size: 14px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- top bar ---- */
+  .topbar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 28px; border-bottom: 1px solid var(--line);
+    background: var(--surface); position: sticky; top: 0; z-index: 5;
+  }
+  .brand { display: flex; align-items: baseline; gap: 9px; }
+  .brand .mark {
+    font-family: var(--display); font-weight: 700; font-size: 22px;
+    letter-spacing: -.02em; color: var(--ink);
+  }
+  .brand .bolt { color: var(--primary); }
+  .brand .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 100px; padding: 3px 9px;
+  }
+  .topbar .lede { margin-left: auto; color: var(--muted); font-size: 13px; }
+  .topbar .lede b { color: var(--ink); font-weight: 600; }
+
+  /* ---- layout ---- */
+  .app { display: grid; grid-template-columns: 380px 1fr; min-height: calc(100vh - 65px); }
+  .queue { border-right: 1px solid var(--line); padding: 22px; overflow-y: auto; }
+  .stage { padding: 26px 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+
+  .section-label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--faint); margin: 0 0 14px;
+  }
+
+  /* ---- case cards ---- */
+  .case {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow);
+    transition: border-color .15s, transform .15s;
+  }
+  .case:hover { border-color: #cdd7e6; transform: translateY(-1px); }
+  .case .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .case .vnb { font-family: var(--mono); font-size: 11px; color: var(--primary); letter-spacing: .02em; }
+  .case .cid {
+    font-family: var(--mono); font-size: 10.5px; color: var(--faint);
+    background: var(--surface-2); border-radius: 6px; padding: 2px 7px;
+  }
+  .case h3 { font-family: var(--display); font-weight: 600; font-size: 15.5px; margin: 8px 0 6px; letter-spacing: -.01em; }
+  .case .sym { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; }
+  .case .actions { display: flex; gap: 8px; }
+
+  button {
+    font-family: var(--body); font-size: 13px; font-weight: 500;
+    border: 0; border-radius: var(--radius-sm); padding: 9px 14px; cursor: pointer;
+    transition: background .15s, box-shadow .15s, opacity .15s;
+  }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 1px 0 var(--primary-ink); }
+  .btn-primary:hover { background: #2a64ff; }
+  .btn-ghost { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+  .btn-ghost:hover { background: #e7edf5; }
   button:disabled { opacity: .5; cursor: default; }
-  label.chk { color: var(--muted); font-size: 12px; display:flex; align-items:center; gap:6px; }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-           padding: 16px; margin-bottom: 16px; }
-  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em;
-              color: var(--muted); margin: 0 0 12px; }
-  .status { display:inline-block; padding: 2px 9px; border-radius: 20px; font-size: 12px; }
-  .s-resolved { background: rgba(56,184,138,.15); color: var(--good); }
-  .s-partial  { background: rgba(224,162,59,.15); color: var(--warn); }
-  .s-needs_human { background: rgba(224,90,90,.15); color: var(--bad); }
-  .transcript { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
-  .t-agent { color: #cdd6f4; } .t-clerk { color: #a6e3a1; }
-  .t-line { padding: 3px 0; }
-  .t-line b { color: var(--muted); }
-  pre { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
-        padding: 12px; overflow-x: auto; font-size: 12px; }
-  .kv { display: grid; grid-template-columns: 130px 1fr; gap: 4px 12px; font-size: 13px; }
-  .kv .k { color: var(--muted); }
-  .note { background: var(--panel2); border-left: 3px solid var(--accent); padding: 10px 12px;
-          border-radius: 4px; margin-top: 6px; }
-  .note .gloss { color: var(--muted); font-size: 12px; margin-top: 6px; }
-  .trig { background: rgba(91,140,255,.1); border: 1px solid var(--line); border-radius: 6px;
-          padding: 8px 10px; font-size: 12px; margin-top: 6px; font-family: ui-monospace, monospace; }
-  .empty { color: var(--muted); font-style: italic; }
-  .digits { color: var(--accent); }
+  .btn-primary .play { margin-right: 6px; }
+
+  .toggle { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; margin-bottom: 18px; }
+  .toggle input { accent-color: var(--primary); width: 15px; height: 15px; }
+
+  /* ---- panels ---- */
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .panel .body { padding: 20px; }
+
+  /* live call header with voltage pulse */
+  .live-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 20px; border-bottom: 1px solid var(--line);
+  }
+  .pulse {
+    width: 11px; height: 11px; border-radius: 50%; background: var(--faint); flex: none;
+  }
+  .pulse.on { background: var(--live); box-shadow: 0 0 0 0 rgba(15,181,166,.5); animation: ping 1.6s ease-out infinite; }
+  @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(15,181,166,.45); } 70% { box-shadow: 0 0 0 12px rgba(15,181,166,0); } 100% { box-shadow: 0 0 0 0 rgba(15,181,166,0); } }
+  .live-head .title { font-family: var(--display); font-weight: 600; font-size: 16px; letter-spacing: -.01em; }
+  .live-head .meta { margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+
+  /* waveform */
+  .wave { display: flex; align-items: center; gap: 3px; height: 18px; }
+  .wave span { width: 3px; height: 5px; background: var(--line); border-radius: 2px; }
+  .wave.on span { background: var(--live); animation: bounce 1s ease-in-out infinite; }
+  .wave.on span:nth-child(2){animation-delay:.1s} .wave.on span:nth-child(3){animation-delay:.2s}
+  .wave.on span:nth-child(4){animation-delay:.3s} .wave.on span:nth-child(5){animation-delay:.15s}
+  .wave.on span:nth-child(6){animation-delay:.25s}
+  @keyframes bounce { 0%,100% { height: 5px; } 50% { height: 17px; } }
+
+  /* stage timeline (a real sequence) */
+  .stages { display: flex; gap: 0; padding: 16px 20px 4px; }
+  .step { flex: 1; position: relative; text-align: center; }
+  .step:not(:last-child)::after {
+    content: ""; position: absolute; top: 9px; left: 50%; width: 100%; height: 2px;
+    background: var(--line);
+  }
+  .step.done::after { background: var(--primary); }
+  .step .dot {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--surface);
+    border: 2px solid var(--line); margin: 0 auto 7px; position: relative; z-index: 1;
+    display: grid; place-items: center; font-size: 10px; color: var(--faint);
+    font-family: var(--mono);
+  }
+  .step.done .dot { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .step.active .dot { border-color: var(--primary); color: var(--primary); }
+  .step .lbl { font-size: 11px; color: var(--muted); font-family: var(--mono); letter-spacing: .02em; }
+  .step.done .lbl, .step.active .lbl { color: var(--ink); }
+
+  /* transcript */
+  .transcript { padding: 8px 20px 20px; display: flex; flex-direction: column; gap: 9px; }
+  .turn { display: flex; gap: 10px; align-items: flex-start; }
+  .turn .who {
+    font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+    padding: 3px 7px; border-radius: 6px; flex: none; margin-top: 1px;
+  }
+  .turn.agent .who { background: var(--primary-glow); color: var(--primary-ink); }
+  .turn.clerk .who { background: rgba(15,181,166,.12); color: #0a7d72; }
+  .turn .msg { font-size: 13px; }
+
+  /* digit tiles — THE signature */
+  .digits { display: flex; flex-wrap: wrap; gap: 5px; margin: 4px 0; }
+  .digits .d {
+    font-family: var(--mono); font-weight: 700; font-size: 15px;
+    width: 28px; height: 34px; display: grid; place-items: center;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; color: var(--ink);
+  }
+  .digits .d.alpha { color: var(--primary); }
+  .spoken { font-family: var(--mono); font-size: 11.5px; color: var(--muted); letter-spacing: .02em; margin-top: 5px; }
+
+  /* result */
+  .kv { display: grid; grid-template-columns: 138px 1fr; gap: 9px 16px; align-items: center; }
+  .kv .k { color: var(--muted); font-size: 12.5px; }
+  .kv .v { font-size: 13.5px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 100px; font-size: 12px; font-weight: 600; font-family: var(--mono); }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .p-resolved { background: rgba(16,185,129,.12); color: #0a8f63; }
+  .p-partial { background: rgba(245,158,11,.14); color: #b9760a; }
+  .p-needs_human { background: rgba(239,68,68,.12); color: #cf3b3b; }
+
+  .note {
+    background: linear-gradient(180deg, #fffdf5, #fff8e8);
+    border: 1px solid #f2e4bd; border-left: 3px solid var(--warn);
+    border-radius: var(--radius-sm); padding: 14px 16px; margin-top: 6px;
+  }
+  .note .nlabel { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #b9760a; margin-bottom: 6px; }
+  .note .de { font-size: 13.5px; color: var(--ink); }
+  .note .en { font-size: 12px; color: var(--muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ecdcb0; }
+
+  .trigger {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--primary-glow); border: 1px solid #cfdcff; border-radius: var(--radius-sm);
+    padding: 11px 13px; margin-top: 8px; font-size: 12.5px;
+  }
+  .trigger .zap { color: var(--primary); font-size: 15px; }
+  .trigger code { font-family: var(--mono); font-size: 11.5px; color: var(--primary-ink); word-break: break-all; }
+
+  .empty { color: var(--faint); font-size: 13px; font-style: italic; }
+  .grid-2 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 20px; }
+  @media (max-width: 1080px) { .grid-2 { grid-template-columns: 1fr; } }
+  @media (max-width: 860px) { .app { grid-template-columns: 1fr; } .queue { border-right: 0; border-bottom: 1px solid var(--line); } }
+
+  *:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } }
 </style>
 </head>
 <body>
-<header>
-  <h1>Nomos · Clearing Calls</h1>
-  <span>AI voice agent for the German energy market — clear a stuck case, close the loop.</span>
-</header>
-<div class="wrap">
-  <div class="col left">
-    <label class="chk"><input type="checkbox" id="dryrun" checked /> Dry run (prepare without dialing)</label>
-    <div id="cases" style="margin-top:12px"></div>
+<div class="topbar">
+  <div class="brand">
+    <span class="mark">nomos<span class="bolt">.</span></span>
+    <span class="tag">clearing calls</span>
   </div>
-  <div class="col right">
-    <div class="panel">
-      <h2>Live call</h2>
-      <div id="live"><span class="empty">Start a call from the left.</span></div>
-    </div>
-    <div class="panel">
-      <h2>Structured result · back-office note · triggered action</h2>
-      <div id="result"><span class="empty">No result yet.</span></div>
-    </div>
-  </div>
+  <div class="lede">Autonomous phone agent that clears stuck market-communication cases with grid operators — <b>in German, end to end.</b></div>
 </div>
+
+<div class="app">
+  <aside class="queue">
+    <label class="toggle"><input type="checkbox" id="dryrun" checked /> Dry run — prepare the call without dialing</label>
+    <p class="section-label">Case queue</p>
+    <div id="cases"></div>
+  </aside>
+
+  <main class="stage">
+    <section class="panel" id="livePanel">
+      <div class="live-head">
+        <span class="pulse" id="pulse"></span>
+        <span class="title">Live call</span>
+        <span class="wave" id="wave"><span></span><span></span><span></span><span></span><span></span><span></span></span>
+        <span class="meta" id="liveMeta">idle</span>
+      </div>
+      <div class="stages" id="stages"></div>
+      <div id="live"><div class="transcript"><span class="empty">Pick a case on the left to place a clearing call.</span></div></div>
+    </section>
+
+    <div class="grid-2">
+      <section class="panel">
+        <div class="body">
+          <p class="section-label">Outcome</p>
+          <div id="result"><span class="empty">No outcome yet — the result lands here when the call ends.</span></div>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="body">
+          <p class="section-label">What the agent will say</p>
+          <div id="preview"><span class="empty">Hover a case → “Preview” to see the numbers it reads, digit by digit.</span></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
 <script>
-const $ = (s) => document.querySelector(s);
+const DE = {'0':'null','1':'eins','2':'zwei','3':'drei','4':'vier','5':'fünf','6':'sechs','7':'sieben','8':'acht','9':'neun'};
+const spellDE = (s) => [...String(s)].filter(c=>/\w/.test(c)).map(c => DE[c] || c.toUpperCase()).join(' · ');
+const tiles = (s) => `<div class="digits">${[...String(s)].filter(c=>/\w/.test(c))
+  .map(c => `<span class="d${/[a-z]/i.test(c)?' alpha':''}">${c.toUpperCase()}</span>`).join('')}</div>`;
+
+const STEPS = ['Dial', 'Menu', 'Clerk', 'Cleared'];
 let currentCall = null, pollTimer = null;
+
+function setStages(idx) {
+  document.getElementById('stages').innerHTML = STEPS.map((s, i) => {
+    const cls = i < idx ? 'done' : (i === idx ? 'active' : '');
+    return `<div class="step ${cls}"><div class="dot">${i < idx ? '✓' : i+1}</div><div class="lbl">${s}</div></div>`;
+  }).join('');
+}
+function setLive(on, meta) {
+  document.getElementById('pulse').className = 'pulse' + (on ? ' on' : '');
+  document.getElementById('wave').className = 'wave' + (on ? ' on' : '');
+  document.getElementById('liveMeta').textContent = meta || (on ? 'on the line' : 'idle');
+}
+function stageFromStatus(st, hasResult) {
+  if (hasResult || st === 'ended' || (st||'').includes('completed')) return 4;
+  if ((st||'').includes('answered')) return 2;
+  if (st === 'dialing' || (st||'').includes('initiated') || (st||'').includes('ringing')) return 1;
+  if (st === 'dry_run' || st === 'preparing') return 0;
+  return 0;
+}
 
 async function loadCases() {
   const cases = await (await fetch('/cases')).json();
-  $('#cases').innerHTML = cases.map(c => `
-    <div class="case">
-      <div class="vnb">${c.vnb_name}</div>
-      <h3>${c.id} · ${c.case_title}</h3>
-      <div class="sym">${c.symptom || ''}</div>
-      <div class="row">
-        <button onclick="startCall('${c.id}')">▶ Start call</button>
-        <button class="ghost" onclick="showVars('${c.id}')">Vars</button>
+  document.getElementById('cases').innerHTML = cases.map(c => `
+    <article class="case">
+      <div class="head"><span class="vnb">${c.vnb_name}</span><span class="cid">${c.id}</span></div>
+      <h3>${c.case_title}</h3>
+      <p class="sym">${c.symptom || ''}</p>
+      <div class="actions">
+        <button class="btn-primary" onclick="startCall('${c.id}')"><span class="play">▸</span>Start call</button>
+        <button class="btn-ghost" onclick="preview('${c.id}')">Preview</button>
       </div>
-    </div>`).join('');
+    </article>`).join('');
 }
 
-async function showVars(id) {
+async function preview(id) {
   const v = await (await fetch(`/cases/${id}/variables`)).json();
-  $('#live').innerHTML = `<div class="kv">
-    <div class="k">MaLo (spoken)</div><div class="digits">${v.malo_id_spoken}</div>
-    <div class="k">Zählernummer</div><div class="digits">${v.zaehlernummer_spoken}</div>
-    <div class="k">Anmeldung</div><div>${v.anmeldung_datum_spoken}</div>
-    <div class="k">Lieferbeginn</div><div>${v.lieferbeginn_spoken}</div>
-    <div class="k">Ziel</div><div>${v.goal}</div>
-  </div>`;
+  document.getElementById('preview').innerHTML = `
+    <div class="kv" style="grid-template-columns:120px 1fr">
+      <div class="k">Goal</div><div class="v">${v.goal || '—'}</div>
+    </div>
+    <div style="margin-top:14px"><div class="k" style="color:var(--muted);font-size:12.5px;margin-bottom:4px">Market location (MaLo)</div>
+      ${tiles(v.malo_id)}<div class="spoken">„${v.malo_id_spoken}“</div></div>
+    <div style="margin-top:14px"><div class="k" style="color:var(--muted);font-size:12.5px;margin-bottom:4px">Meter serial</div>
+      ${tiles(v.zaehlernummer)}</div>`;
 }
 
 async function startCall(id) {
-  const dry = $('#dryrun').checked;
+  const dry = document.getElementById('dryrun').checked;
   const r = await (await fetch('/calls', {
     method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ case_id: id, dry_run: dry })
   })).json();
-  if (r.detail) { $('#live').innerHTML = `<span class="s-needs_human">${r.detail}</span>`; return; }
+  if (r.detail) { document.getElementById('live').innerHTML = `<div class="transcript"><span class="empty">${r.detail}</span></div>`; return; }
   currentCall = r.call_id;
-  $('#result').innerHTML = '<span class="empty">Call in progress…</span>';
-  poll();
+  document.getElementById('result').innerHTML = '<span class="empty">Call in progress…</span>';
+  setLive(true, dry ? 'dry run' : 'dialing');
+  setStages(dry ? 1 : 1);
   if (dry) {
-    $('#live').innerHTML = `<p>Prepared call <code>${r.call_id}</code> (dry run — no dial).</p>
-      <p class="empty">Dynamic variables ready. In a live run the agent now navigates the IVR and speaks.</p>
-      <button class="ghost" onclick="finalizeCall()">Simulate finalize →</button>`;
+    document.getElementById('live').innerHTML = `<div class="transcript">
+      <span class="empty">Prepared <code>${r.call_id.slice(0,8)}</code> — no number dialed (dry run).
+      In a live run the agent navigates the menu, declares it is an AI, and speaks now.</span></div>
+      <div style="padding:0 20px 18px"><button class="btn-ghost" onclick="finalizeCall()">Simulate outcome →</button></div>`;
   }
+  poll();
 }
 
 async function poll() {
@@ -127,43 +315,53 @@ async function poll() {
   if (!currentCall) return;
   try {
     const live = await (await fetch(`/calls/${currentCall}/live`)).json();
-    const t = (live.transcript || []).map(x =>
-      `<div class="t-line t-${x.role.includes('agent')?'agent':'clerk'}"><b>${x.role}:</b> ${x.text}</div>`).join('');
-    if (t) $('#live').querySelector('.transcript')?.remove();
-    if (t && !$('#live').innerHTML.includes('transcript'))
-      $('#live').insertAdjacentHTML('beforeend', `<div class="transcript">${t}</div>`);
-    if ((live.status||'').startsWith('twilio:completed') || live.status === 'ended') finalizeCall();
+    const turns = live.transcript || [];
+    if (turns.length) {
+      document.getElementById('live').innerHTML = `<div class="transcript">${turns.map(x => {
+        const who = x.role.includes('agent') ? 'agent' : 'clerk';
+        return `<div class="turn ${who}"><span class="who">${who}</span><span class="msg">${x.text}</span></div>`;
+      }).join('')}</div>`;
+    }
+    setStages(stageFromStatus(live.status, false));
+    if ((live.status||'').includes('completed') || live.status === 'ended') finalizeCall();
   } catch (e) {}
   pollTimer = setTimeout(poll, 1500);
 }
 
 async function finalizeCall() {
   if (!currentCall) return;
+  if (pollTimer) clearTimeout(pollTimer);
   const r = await (await fetch(`/calls/${currentCall}/finalize`, {method:'POST'})).json();
   if (r.detail) return;
   renderResult(r);
-  if (pollTimer) clearTimeout(pollTimer);
+  setLive(false, 'call ended');
+  setStages(4);
 }
 
 function renderResult(r) {
-  const trig = (r.triggered||[]).map(t => `<div class="trig">⚡ ${t}</div>`).join('') ||
-    '<span class="empty">none</span>';
-  $('#result').innerHTML = `
+  const corrected = r.corrected_malo
+    ? `${tiles(r.corrected_malo)}<div class="spoken">„${spellDE(r.corrected_malo)}“</div>` : '<span class="empty">—</span>';
+  const vorg = r.vorgangsnummer
+    ? `${tiles(r.vorgangsnummer)}` : '<span class="empty">—</span>';
+  const trig = (r.triggered||[]).length
+    ? r.triggered.map(t => `<div class="trigger"><span class="zap">⚡</span><code>${t}</code></div>`).join('')
+    : '<span class="empty">none</span>';
+  document.getElementById('result').innerHTML = `
     <div class="kv">
-      <div class="k">Case</div><div>${r.case_id}</div>
-      <div class="k">Status</div><div><span class="status s-${r.status}">${r.status}</span></div>
-      <div class="k">Reason</div><div>${r.reason || '—'}</div>
-      <div class="k">Meter</div><div>${r.meter_status}</div>
-      <div class="k">Corrected MaLo</div><div class="digits">${r.corrected_malo || '—'}</div>
-      <div class="k">Vorgangsnummer</div><div class="digits">${r.vorgangsnummer || '—'}</div>
-      <div class="k">Next action</div><div>${r.next_action}</div>
-      <div class="k">Confidence</div><div>${r.confidence}</div>
+      <div class="k">Case</div><div class="v">${r.case_id}</div>
+      <div class="k">Status</div><div class="v"><span class="pill p-${r.status}">${r.status.replace('_',' ')}</span></div>
+      <div class="k">Reason</div><div class="v">${r.reason || '—'}</div>
+      <div class="k">Meter</div><div class="v">${r.meter_status}</div>
+      <div class="k">Next action</div><div class="v">${r.next_action.replace(/_/g,' ')}</div>
     </div>
-    <div class="note"><b>Notiz (DE):</b> ${r.note_de}
-      <div class="gloss"><b>EN:</b> ${r.note_en_gloss}</div></div>
-    <h2 style="margin-top:16px">Triggered</h2>${trig}`;
+    <div style="margin-top:16px"><div class="k" style="color:var(--muted);font-size:12.5px;margin-bottom:5px">Corrected MaLo</div>${corrected}</div>
+    <div style="margin-top:14px"><div class="k" style="color:var(--muted);font-size:12.5px;margin-bottom:5px">Vorgangsnummer</div>${vorg}</div>
+    <div class="note"><div class="nlabel">Back-office note · DE</div><div class="de">${r.note_de}</div>
+      <div class="en"><b>EN</b> · ${r.note_en_gloss}</div></div>
+    <div style="margin-top:16px"><p class="section-label" style="margin-bottom:8px">Triggered action</p>${trig}</div>`;
 }
 
+setStages(0);
 loadCases();
 </script>
 </body>

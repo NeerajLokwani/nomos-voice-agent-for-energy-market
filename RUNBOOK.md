@@ -48,8 +48,35 @@ cp .env.example .env          # fill in the values below
 ## Run
 
 ```bash
-uvicorn app.main:app --reload          # dashboard at http://localhost:8000
+uvicorn app.main:app --reload          # backend + dashboard at http://localhost:8000
 ```
+
+### Frontend (React + TypeScript + Vite — `frontend/`)
+
+The dashboard is a React + TypeScript app. FastAPI serves the **built** bundle at `/`
+automatically (falling back to the legacy single-file `web/index.html` if no build exists).
+
+```bash
+cd frontend && npm install
+
+# Dev: hot-reload UI on :5173, API proxied to FastAPI on :8000 (run both)
+npm run dev
+
+# Type-check only
+npm run typecheck
+
+# Prod: type-check + build; FastAPI then serves frontend/dist at http://localhost:8000
+npm run build
+```
+
+Layout of `frontend/src/`:
+- `styles.css` — design tokens (palette, type scale).
+- `lib/types.ts` — **shared types mirroring the backend** (`app/schema.py`,
+  `app/fixtures.py`): `CaseSummary`, `CaseVariables`, `CallResult`, etc. Keep in sync with Python.
+- `lib/api.ts` — all backend calls, isolated; point the UI at another backend in one file.
+- `lib/digits.ts` — German digit spelling (mirrors `app/digits.py`).
+- `components/Digits.tsx` — the digit-tile signature; plus `CaseCard`, `LiveCall`,
+  `Outcome`, `Preview`, and `App.tsx`.
 
 Push the agent config to ElevenLabs (after editing the prompt, or to set the voice):
 
