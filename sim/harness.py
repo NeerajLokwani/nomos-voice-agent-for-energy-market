@@ -18,6 +18,10 @@ import os
 import sys
 from typing import List
 
+from dotenv import load_dotenv
+
+load_dotenv()  # pick up OPENAI_API_KEY / SIM_MODEL from .env
+
 from app.agent_prompt import AGENT_SYSTEM_PROMPT, FIRST_MESSAGE, render
 from app.fixtures import build_dynamic_variables, get_case
 from .personas import PERSONAS, render_clerk_prompt
@@ -49,6 +53,25 @@ def _say(client, system: str, history: List[dict]) -> str:
     return (resp.choices[0].message.content or "").strip()
 
 
+_END_CUES = (
+    "tschüss", "auf wiederhören", "schönen tag noch",
+    "kein mensch", "needs_human", "legt auf", "aufgelegt",
+    "gespräch beendet", "vorgang abgeschlossen",
+)
+
+
+def _is_call_over(agent_msg: str, prev_agent: str) -> bool:
+    """Stop when the agent closes the call (polite goodbye OR a clean hang-up/needs_human),
+    or when it starts repeating itself (a stuck meta-loop, e.g. after voicemail)."""
+    low = agent_msg.lower()
+    if any(cue in low for cue in _END_CUES):
+        return True
+    # repetition guard: near-identical consecutive agent turns
+    if prev_agent and low.strip()[:60] == prev_agent.lower().strip()[:60]:
+        return True
+    return False
+
+
 def run(case_id: str, variant: str = "happy", verbose: bool = True) -> List[dict]:
     """Return the transcript as [{speaker, text}, ...]."""
     client = _client()
@@ -72,14 +95,16 @@ def run(case_id: str, variant: str = "happy", verbose: bool = True) -> List[dict
         {"role": "user", "content": f"{clerk_msg}\n[System: Taste {digit} wurde gedrückt.]"}
     ]
 
+    prev_agent = ""
     for _ in range(MAX_TURNS):
         agent_msg = _say(client, agent_system, agent_hist)
         agent_hist.append({"role": "assistant", "content": agent_msg})
         transcript.append({"speaker": "agent", "text": agent_msg})
         if verbose:
             print(f"[AGENT] {agent_msg}\n")
-        if "tschüss" in agent_msg.lower() or "auf wiederhören" in agent_msg.lower():
+        if _is_call_over(agent_msg, prev_agent):
             break
+        prev_agent = agent_msg
 
         clerk_hist.append({"role": "user", "content": agent_msg})
         clerk_msg = _say(client, clerk_system, clerk_hist)

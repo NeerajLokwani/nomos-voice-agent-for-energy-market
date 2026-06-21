@@ -1,27 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "./lib/api.ts";
 import CaseCard from "./components/CaseCard.tsx";
-import LiveCall from "./components/LiveCall.tsx";
-import Outcome from "./components/Outcome.tsx";
+import CloseLoopResult from "./components/CloseLoopResult.tsx";
+import Transcript from "./components/Transcript.tsx";
 import Preview from "./components/Preview.tsx";
-import type { CallResult, CaseSummary, CaseVariables, LiveState } from "./lib/types.ts";
+import PipelineStepper from "./components/PipelineStepper.tsx";
+import type {
+  CaseSummary, CaseVariables, ConversationRecord, TranscriptTurn,
+} from "./lib/types.ts";
 
-function stageFromStatus(st: string | undefined, hasResult: boolean): number {
-  if (hasResult || st === "ended" || (st || "").includes("completed")) return 4;
-  if ((st || "").includes("answered")) return 2;
-  if (st === "dialing" || (st || "").includes("initiated") || (st || "").includes("ringing")) return 1;
-  return 0;
-}
-
-const IDLE: LiveState = { on: false, meta: "idle", transcript: [] };
+type Tab = "overview" | "transcript";
 
 export default function App() {
   const [cases, setCases] = useState<CaseSummary[]>([]);
-  const [dryRun, setDryRun] = useState(true);
   const [vars, setVars] = useState<CaseVariables | null>(null);
-  const [result, setResult] = useState<CallResult | null>(null);
-  const [stageIndex, setStageIndex] = useState(0);
-  const [live, setLive] = useState<LiveState>(IDLE);
+  const [record, setRecord] = useState<ConversationRecord | null>(null);
+  const [turns, setTurns] = useState<TranscriptTurn[]>([]);
+  const [phase, setPhase] = useState(0);       // 0 idle … 6 done (pipeline stepper)
+  const [statusText, setStatusText] = useState("Agent ready");
+  const [tab, setTab] = useState<Tab>("overview");
+  const [note, setNote] = useState<string | null>(null);
 
   const callRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -31,59 +29,56 @@ export default function App() {
     return () => clearTimeout(timerRef.current);
   }, []);
 
+  function reset() {
+    clearTimeout(timerRef.current);
+    setRecord(null);
+    setTurns([]);
+    setNote(null);
+  }
+
+  function showRecord(rec: ConversationRecord) {
+    setRecord(rec);
+    setTurns((rec.transcript || []).map((t) => ({ role: t.role, text: t.message })));
+    setPhase(6);
+    setStatusText("Call ended");
+    setNote(null);
+  }
+
   async function preview(id: string) {
     setVars(await api.caseVariables(id));
   }
 
   async function startCall(id: string) {
-    const r = await api.startCall(id, dryRun);
-    if ("error" in r) {
-      setLive({ on: false, meta: "refused", transcript: [], note: r.error });
-      return;
-    }
+    reset();
+    const r = await api.startCall(id, false);
+    if ("error" in r) { setStatusText("Refused"); setNote(r.error); return; }
     callRef.current = r.call_id;
-    setResult(null);
-    setStageIndex(1);
-    setLive({
-      on: true,
-      meta: dryRun ? "dry run" : "dialing",
-      transcript: [],
-      note: dryRun
-        ? `Prepared ${r.call_id.slice(0, 8)} — no number dialed (dry run). In a live run the agent navigates the menu, declares it is an AI, and speaks now.`
-        : null,
-    });
-    poll();
+    setPhase(2);
+    setStatusText("On call…");
+    setNote("Calling the practice clerk. The agent navigates the menu, declares it is an AI, and speaks. The result appears here when the call ends.");
+    setTab("overview");
+    pollRecord(r.call_id);
   }
 
-  async function poll() {
+  async function pollRecord(callId: string) {
     clearTimeout(timerRef.current);
-    if (!callRef.current) return;
-    try {
-      const l = await api.live(callRef.current);
-      const turns = l.transcript || [];
-      setLive((prev) => ({ ...prev, transcript: turns, note: turns.length ? null : prev.note }));
-      setStageIndex(stageFromStatus(l.status, false));
-      if ((l.status || "").includes("completed") || l.status === "ended") {
-        finalize();
-        return;
-      }
-    } catch {
-      /* transient — keep polling */
-    }
-    timerRef.current = setTimeout(poll, 1500);
+    const rec = await api.conversation(callId);
+    if (!("error" in rec)) { showRecord(rec); return; }
+    timerRef.current = setTimeout(() => pollRecord(callId), 2500);
   }
 
-  async function finalize() {
-    clearTimeout(timerRef.current);
-    if (!callRef.current) return;
-    const r = await api.finalize(callRef.current);
-    if ("error" in r) return;
-    setResult(r);
-    setStageIndex(4);
-    setLive((prev) => ({ ...prev, on: false, meta: "call ended" }));
+  async function runDemo(id: string) {
+    reset();
+    callRef.current = null;
+    setPhase(3);
+    setStatusText("Running pipeline…");
+    setTab("overview");
+    const rec = await api.simulatePostcall(id);
+    if ("error" in rec) { setStatusText("Error"); setNote(rec.error); return; }
+    showRecord(rec);
   }
 
-  const showSimulate = live.on && dryRun && live.transcript.length === 0;
+  const statusOn = phase > 0 && phase < 6;
 
   return (
     <>
@@ -93,45 +88,48 @@ export default function App() {
           <span className="tag">clearing calls</span>
         </div>
         <div className="lede">
-          Autonomous phone agent that clears stuck market-communication cases with grid
-          operators — <b>in German, end to end.</b>
+          Calls a grid operator, clears the case in German, then extracts the facts, writes
+          the note, and triggers the next action.
         </div>
+        <span className={`status-chip ${statusOn ? "live" : record ? "done" : ""}`}>
+          <span className="dot" /> {statusText}
+        </span>
       </header>
 
-      <div className="app">
-        <aside className="queue">
-          <label className="toggle">
-            <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
-            Dry run — prepare the call without dialing
-          </label>
-          <p className="section-label">Case queue</p>
-          {cases.map((c) => (
-            <CaseCard key={c.id} c={c} onStart={startCall} onPreview={preview} />
-          ))}
-        </aside>
+      <div className="shell">
+        <PipelineStepper activeIndex={phase} />
 
-        <main className="stage">
-          <LiveCall
-            live={{ ...live, placeholder: "Pick a case on the left to place a clearing call." }}
-            stageIndex={stageIndex}
-            onSimulate={showSimulate ? finalize : null}
-          />
-
-          <div className="grid-2">
-            <section className="panel">
-              <div className="pbody">
-                <p className="section-label">Outcome</p>
-                <Outcome result={result} />
-              </div>
-            </section>
-            <section className="panel">
+        <div className="app">
+          <aside className="queue">
+            <p className="section-label">Case queue</p>
+            {cases.map((c) => (
+              <CaseCard key={c.id} c={c} onStart={startCall} onDemo={runDemo} onPreview={preview} />
+            ))}
+            <div className="panel preview-panel">
               <div className="pbody">
                 <p className="section-label">What the agent will say</p>
                 <Preview vars={vars} />
               </div>
-            </section>
-          </div>
-        </main>
+            </div>
+          </aside>
+
+          <main className="stage">
+            <div className="tabs">
+              <button className={`tab ${tab === "overview" ? "active" : ""}`} onClick={() => setTab("overview")}>
+                Overview
+              </button>
+              <button className={`tab ${tab === "transcript" ? "active" : ""}`} onClick={() => setTab("transcript")}>
+                Transcript <span className="count">{turns.length}</span>
+              </button>
+            </div>
+
+            {note && <div className="hint-banner">{note}</div>}
+
+            {tab === "overview"
+              ? <CloseLoopResult record={record} />
+              : <div className="cards"><Transcript turns={turns} placeholder="No transcript yet — start a call or run Demo extraction." /></div>}
+          </main>
+        </div>
       </div>
     </>
   );

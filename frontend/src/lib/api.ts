@@ -4,6 +4,7 @@ import type {
   CallResult,
   CaseSummary,
   CaseVariables,
+  ConversationRecord,
   LiveSnapshot,
   StartCallResponse,
 } from "./types";
@@ -35,5 +36,14 @@ export const api = {
   finalize: (callId: string): Promise<CallResult | { error: string }> =>
     fetch(`/calls/${callId}/finalize`, { method: "POST" }).then((r) =>
       jsonOrError<CallResult>(r)
+    ),
+
+  // --- close-the-loop: post-call extraction record ---
+  conversation: (key: string): Promise<ConversationRecord | { error: string }> =>
+    fetch(`/api/conversations/${key}`).then((r) => jsonOrError<ConversationRecord>(r)),
+
+  simulatePostcall: (caseId: string): Promise<ConversationRecord | { error: string }> =>
+    fetch(`/api/simulate-postcall/${caseId}`, { method: "POST" }).then((r) =>
+      jsonOrError<ConversationRecord>(r)
     ),
 };

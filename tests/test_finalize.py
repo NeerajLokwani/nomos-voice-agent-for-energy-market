@@ -71,16 +71,33 @@ def test_needs_human_path_flags_followup_no_fabrication():
     assert r["meter_status"] == "unknown"
 
 
-def test_post_call_webhook_finalizes_via_dynamic_call_id():
+def test_post_call_webhook_runs_closeloop_pipeline():
+    """The EL post-call webhook now runs the close-the-loop pipeline: it grounds the
+    corrected MaLo from the German spoken-digit readback and stores a record keyed by
+    our call_id (passed as a dynamic variable)."""
     cid = _start("CASE-C")
-    client.post("/tools/record_finding", json={"call_id": cid, "corrected_malo": "71005523911"})
-    client.post("/tools/end_call", json={"call_id": cid, "status": "resolved"})
-    payload = {
+    env = {
+        "type": "post_call_transcription",
         "data": {
-            "conversation_initiation_client_data": {"dynamic_variables": {"call_id": cid}},
-            "transcript": [{"role": "agent", "message": "Guten Tag, hier spricht ein KI-Assistent"}],
-        }
+            "conversation_id": "conv_xyz",
+            "transcript": [
+                {"role": "agent", "message": "Guten Tag, hier spricht ein KI-Assistent von Nomos."},
+                {"role": "user", "message": "Die hinterlegte Marktlokation war falsch, sie passte nicht zur Adresse. Die korrekte MaLo ist sieben eins null null fünf fünf zwei drei neun eins eins."},
+                {"role": "agent", "message": "Verstanden, wir hinterlegen die korrigierte Marktlokation und senden die Anmeldung erneut."},
+            ],
+            "analysis": {"data_collection_results": {
+                "malo_id": {"value": "71005523911"},
+                "stuck_reason": {"value": "Falsche Marktlokation hinterlegt, passte nicht zur Adresse"},
+                "next_step": {"value": "korrigierte Marktlokation hinterlegen und Anmeldung erneut senden"},
+            }},
+            "conversation_initiation_client_data": {"dynamic_variables": {"call_id": cid, "case_id": "CASE-C"}},
+        },
     }
-    r = client.post("/elevenlabs/post-call", json=payload)
+    r = client.post("/elevenlabs/post-call", json=env)
     assert r.status_code == 200
-    assert r.json()["result"]["next_action"] == "trigger_signup_step"
+    rec = r.json()["record"]
+    assert rec["facts"]["malo_id"] == "71005523911"      # grounded from readback
+    assert rec["facts"]["needs_human"] is False
+    assert any(a["type"] == "write_malo" for a in rec["actions"])
+    # stored + retrievable by our call_id
+    assert client.get(f"/api/conversations/{cid}").json()["facts"]["malo_id"] == "71005523911"

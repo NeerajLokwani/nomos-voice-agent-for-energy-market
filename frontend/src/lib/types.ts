@@ -90,3 +90,49 @@ export interface DigitTile {
   ch: string;
   alpha: boolean;
 }
+
+// --- Close-the-loop pipeline (post-call webhook → grounded facts → note → triggers) ---
+
+export interface CLTranscriptTurn {
+  role: "agent" | "user";
+  message: string;
+}
+
+export interface ExtractedFacts {
+  malo_id: string | null;
+  stuck_reason: string | null;
+  next_step: string | null;
+  ticket_number: string | null;
+  vorgang_nr: string | null;
+  needs_human: boolean;
+  analysis_confidence: number;
+  grounding_notes: string[];
+  source: string;
+}
+
+export interface EmailDraft {
+  subject: string;
+  body: string;
+  needs_human: boolean;
+}
+
+export interface TriggeredAction {
+  type: string;
+  status: "fired" | "skipped" | "flagged";
+  detail: string;
+  target: string | null;
+  fired_at: string;
+}
+
+export interface ConversationRecord {
+  conversation_id: string;
+  call_id: string | null;
+  agent_id: string | null;
+  case: string | null;
+  transcript: CLTranscriptTurn[];
+  facts: ExtractedFacts;
+  note: string;
+  email_draft: EmailDraft;
+  actions: TriggeredAction[];
+  received_at: string;
+}

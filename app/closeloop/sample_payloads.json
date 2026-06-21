@@ -1,0 +1,99 @@
+{
+  "_note": "Nur synthetische Daten. Niemals echte MaLo-Nummern, Adressen oder Telefonnummern. Diese Fixtures simulieren den Post-Call-Webhook-Payload von ElevenLabs fuer die drei Case-Typen.",
+  "CASE-A": {
+    "label": "Marktlokation nimmt nicht teil (Baustromzaehler ausgebaut)",
+    "payload": {
+      "conversation_id": "conv_demo_caseA",
+      "agent_id": "agent_7601kvk3wsbjes3b5572rh23pgt4",
+      "transcript": [
+        {"role": "agent", "message": "Guten Tag, ich bin eine kuenstliche Intelligenz und rufe im Auftrag von Nomos an. Es geht um eine gestoerte Registrierung an der Lieferstelle Musterweg 12 in 10115 Musterstadt."},
+        {"role": "user", "message": "Ja guten Tag, worum geht es genau?"},
+        {"role": "agent", "message": "Wir haben eine Anmeldung zum Lieferbeginn eingereicht, aber die Marktlokation nimmt laut Rueckmeldung nicht teil. Ich nenne Ihnen gerne die Eckdaten. Die Marktlokation lautet: fuenf null drei eins zwei vier sieben acht neun null eins."},
+        {"role": "user", "message": "Moment, ich schaue nach. Ja, die habe ich hier. Das Problem ist, dass an der Adresse Mitte Mai der Baustromzaehler ausgebaut wurde. Deshalb ist die Marktlokation aktuell stillgelegt."},
+        {"role": "agent", "message": "Verstanden. Der Baustromzaehler wurde Mitte Mai ausgebaut, daher ist die Marktlokation stillgelegt. Bedeutet das, wir brauchen eine neue Anlage beziehungsweise eine neue Marktlokation fuer den regulaeren Zaehler?"},
+        {"role": "user", "message": "Genau. Sobald der neue Zaehler gesetzt ist, gibt es eine neue Marktlokation. Die muessten Sie dann mit dem Kunden klaeren und neu anmelden."},
+        {"role": "agent", "message": "Vielen Dank. Ich fasse zusammen: Baustromzaehler Mitte Mai ausgebaut, Marktlokation stillgelegt, neue Anlage mit dem Kunden klaeren und neu anmelden. Habe ich das korrekt?"},
+        {"role": "user", "message": "Ja, das ist korrekt."},
+        {"role": "agent", "message": "Herzlichen Dank fuer Ihre Hilfe. Auf Wiederhoeren."}
+      ],
+      "analysis": {
+        "malo_id": "50312478901",
+        "stuck_reason": "Baustromzaehler wurde Mitte Mai ausgebaut, Marktlokation ist stillgelegt",
+        "next_step": "neue Anlage mit Kunde klaeren und neu anmelden",
+        "ticket_number": null
+      },
+      "metadata": {"case": "CASE-A", "duration_seconds": 95}
+    }
+  },
+  "CASE-B": {
+    "label": "Registration gesendet, APERAK erhalten, danach Stille",
+    "payload": {
+      "conversation_id": "conv_demo_caseB",
+      "agent_id": "agent_7601kvk3wsbjes3b5572rh23pgt4",
+      "transcript": [
+        {"role": "agent", "message": "Guten Tag, ich bin eine kuenstliche Intelligenz und rufe im Auftrag von Nomos an. Es geht um eine Anmeldung, zu der wir eine APERAK erhalten haben, aber seitdem keine weitere Rueckmeldung."},
+        {"role": "user", "message": "Guten Tag. Haben Sie eine Vorgangsnummer fuer mich?"},
+        {"role": "agent", "message": "Die Marktlokation lautet: sieben sieben eins zwei drei vier fuenf sechs sieben acht neun. Der Lieferbeginn war der erste Juni."},
+        {"role": "user", "message": "Einen Moment. Also ich sehe hier, die Anmeldung ist eingegangen und wurde positiv mit einer APERAK quittiert. Danach haengt der Vorgang aber in einer manuellen Klaerung fest, weil der Zaehlertyp nicht eindeutig war."},
+        {"role": "agent", "message": "Das heisst, die Anmeldung ist nicht verloren, sondern liegt in der manuellen Klaerung wegen eines unklaren Zaehlertyps. Gibt es dazu eine Vorgangsnummer?"},
+        {"role": "user", "message": "Ja, die Vorgangsnummer ist V wie Victor, dann 2026 minus 0 8 8 1 5."},
+        {"role": "agent", "message": "Ich lese zurueck: Vorgangsnummer V 2026 0 8 8 1 5. Korrekt?"},
+        {"role": "user", "message": "Ganz genau."},
+        {"role": "agent", "message": "Und was ist der naechste Schritt, damit die Klaerung abgeschlossen wird?"},
+        {"role": "user", "message": "Wir brauchen von Ihnen die Bestaetigung des Zaehlertyps, dann koennen wir den Vorgang abschliessen."},
+        {"role": "agent", "message": "Verstanden, wir liefern den bestaetigten Zaehlertyp nach. Vielen Dank, auf Wiederhoeren."}
+      ],
+      "analysis": {
+        "malo_id": "77123456789",
+        "stuck_reason": "Vorgang haengt in manueller Klaerung, weil der Zaehlertyp nicht eindeutig ist",
+        "next_step": "Zaehlertyp bestaetigen und an Netzbetreiber liefern",
+        "ticket_number": "V2026-08815"
+      },
+      "metadata": {"case": "CASE-B", "duration_seconds": 110}
+    }
+  },
+  "CASE-C": {
+    "label": "MaLo passt nicht zur Adresse, korrekte Nummer erfragen + Readback (Curveball)",
+    "payload": {
+      "conversation_id": "conv_demo_caseC",
+      "agent_id": "agent_7601kvk3wsbjes3b5572rh23pgt4",
+      "transcript": [
+        {"role": "agent", "message": "Guten Tag, ich bin eine kuenstliche Intelligenz und rufe im Auftrag von Nomos an. Wir haben eine Anmeldung fuer die Lieferstelle Beispielallee 4 in 20095 Musterstadt, aber unsere Marktlokation scheint nicht zur Adresse zu passen."},
+        {"role": "user", "message": "Guten Tag, welche Marktlokation haben Sie denn notiert?"},
+        {"role": "agent", "message": "Wir haben notiert: neun null neun acht sieben sechs fuenf vier drei zwei eins."},
+        {"role": "user", "message": "Nein, die gehoert nicht zu dieser Adresse. Die richtige Marktlokation fuer die Beispielallee 4 ist die acht acht sieben sechs fuenf vier drei zwei eins null."},
+        {"role": "agent", "message": "Danke. Ich lese die korrigierte Marktlokation Ziffer fuer Ziffer zurueck: acht, acht, sieben, sechs, fuenf, vier, drei, zwei, eins, null. Das sind zehn Ziffern, eine Marktlokation hat elf Stellen. Fehlt am Anfang oder Ende eine Ziffer?"},
+        {"role": "user", "message": "Oh, Sie haben recht. Es ist die acht acht sieben sechs fuenf vier drei zwei eins null drei."},
+        {"role": "agent", "message": "Ich lese erneut zurueck: acht, acht, sieben, sechs, fuenf, vier, drei, zwei, eins, null, drei. Elf Stellen. Korrekt?"},
+        {"role": "user", "message": "Ja, jetzt stimmt es."},
+        {"role": "agent", "message": "Vielen Dank, ich aktualisiere die Marktlokation auf acht acht sieben sechs fuenf vier drei zwei eins null drei. Auf Wiederhoeren."}
+      ],
+      "analysis": {
+        "malo_id": "88765432103",
+        "stuck_reason": "Falsche Marktlokation hinterlegt, passte nicht zur Adresse",
+        "next_step": "korrigierte Marktlokation 88765432103 im System hinterlegen und Anmeldung erneut senden",
+        "ticket_number": null
+      },
+      "metadata": {"case": "CASE-C", "duration_seconds": 105}
+    }
+  },
+  "CASE-GAP": {
+    "label": "Gap-Test: Sachbearbeiter gibt keine echte Diagnose (needs_human muss true sein)",
+    "payload": {
+      "conversation_id": "conv_demo_caseGAP",
+      "agent_id": "agent_7601kvk3wsbjes3b5572rh23pgt4",
+      "transcript": [
+        {"role": "agent", "message": "Guten Tag, ich bin eine kuenstliche Intelligenz und rufe im Auftrag von Nomos an. Es geht um eine gestoerte Registrierung."},
+        {"role": "user", "message": "Da kann ich Ihnen am Telefon leider nichts zu sagen. Schicken Sie das bitte schriftlich an unser Postfach."},
+        {"role": "agent", "message": "Verstanden, wir reichen den Vorgang schriftlich nach. Vielen Dank, auf Wiederhoeren."}
+      ],
+      "analysis": {
+        "malo_id": null,
+        "stuck_reason": null,
+        "next_step": "Anliegen schriftlich an das Postfach des Netzbetreibers senden",
+        "ticket_number": null
+      },
+      "metadata": {"case": "CASE-GAP", "duration_seconds": 30}
+    }
+  }
+}

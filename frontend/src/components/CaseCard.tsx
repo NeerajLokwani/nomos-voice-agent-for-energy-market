@@ -3,10 +3,11 @@ import type { CaseSummary } from "../lib/types.ts";
 interface Props {
   c: CaseSummary;
   onStart: (id: string) => void;
+  onDemo: (id: string) => void;
   onPreview: (id: string) => void;
 }
 
-export default function CaseCard({ c, onStart, onPreview }: Props) {
+export default function CaseCard({ c, onStart, onDemo, onPreview }: Props) {
   return (
     <article className="case">
       <div className="head">
@@ -19,6 +20,7 @@ export default function CaseCard({ c, onStart, onPreview }: Props) {
         <button className="btn-primary" onClick={() => onStart(c.id)}>
           <span className="play">▸</span>Start call
         </button>
+        <button className="btn-ghost" onClick={() => onDemo(c.id)}>Demo extraction</button>
         <button className="btn-ghost" onClick={() => onPreview(c.id)}>Preview</button>
       </div>
     </article>

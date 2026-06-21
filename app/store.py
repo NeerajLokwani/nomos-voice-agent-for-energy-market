@@ -67,3 +67,40 @@ def append_transcript(call_id: str, role: str, text: str) -> None:
 
 def get_live(call_id: str) -> Optional[dict]:
     return _live.get(call_id)
+
+
+# --- close-the-loop conversation records (post-call pipeline output) ---
+
+def _conv_path() -> Path:
+    p = Path(get_settings().store_path).parent / "conversations.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def _read_convs() -> Dict[str, dict]:
+    p = _conv_path()
+    if not p.exists():
+        return {}
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_conversation(record: dict) -> str:
+    """Persist a ConversationRecord dict, keyed by call_id (fallback conversation_id)."""
+    key = record.get("call_id") or record.get("conversation_id")
+    with _lock:
+        data = _read_convs()
+        data[key] = record
+        _conv_path().write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return key
+
+
+def get_conversation(key: str) -> Optional[dict]:
+    return _read_convs().get(key)
+
+
+def list_conversations() -> List[dict]:
+    # newest first
+    return sorted(_read_convs().values(), key=lambda r: r.get("received_at", ""), reverse=True)

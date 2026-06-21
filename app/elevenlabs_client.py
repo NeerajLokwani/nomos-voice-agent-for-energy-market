@@ -30,16 +30,18 @@ def _headers() -> Dict[str, str]:
 
 
 def build_tools_spec(base_url: str) -> List[dict]:
-    """Webhook tool definitions the EL agent calls mid-conversation.
+    """Webhook tool_config definitions the EL agent calls mid-conversation.
 
     Kept tiny and fast (latency = the thing that makes Helga hang up). validate_id is a
-    local checksum on our side; the others record/transition state.
+    local checksum on our side; the others record/transition state. Shapes follow the
+    standalone ElevenLabs Tools API (/v1/convai/tools).
     """
     def tool(name: str, description: str, props: dict, required: List[str]) -> dict:
         return {
             "type": "webhook",
             "name": name,
             "description": description,
+            "response_timeout_secs": 10,
             "api_schema": {
                 "url": f"{base_url}/tools/{name}",
                 "method": "POST",
@@ -57,9 +59,9 @@ def build_tools_spec(base_url: str) -> List[dict]:
             "Prüfe/formatiere eine MaLo oder Vorgangsnummer und erhalte sie Ziffer für "
             "Ziffer zum Zurücklesen.",
             {
-                "call_id": {"type": "string"},
-                "id_type": {"type": "string", "enum": ["malo", "vorgangsnummer"]},
-                "value": {"type": "string"},
+                "call_id": {"type": "string", "description": "Die ID dieses Anrufs."},
+                "id_type": {"type": "string", "description": "malo oder vorgangsnummer."},
+                "value": {"type": "string", "description": "Die genannte Nummer."},
             },
             ["call_id", "id_type", "value"],
         ),
@@ -68,14 +70,11 @@ def build_tools_spec(base_url: str) -> List[dict]:
             "Halte einen bestätigten Befund fest (Grund, korrigierte MaLo, "
             "Vorgangsnummer, Zählerstatus).",
             {
-                "call_id": {"type": "string"},
-                "reason": {"type": "string"},
-                "corrected_malo": {"type": "string"},
-                "vorgangsnummer": {"type": "string"},
-                "meter_status": {
-                    "type": "string",
-                    "enum": ["active", "removed", "unknown"],
-                },
+                "call_id": {"type": "string", "description": "Die ID dieses Anrufs."},
+                "reason": {"type": "string", "description": "Der echte Grund/Befund."},
+                "corrected_malo": {"type": "string", "description": "Korrigierte MaLo, falls genannt."},
+                "vorgangsnummer": {"type": "string", "description": "Vorgangsnummer, falls genannt."},
+                "meter_status": {"type": "string", "description": "active, removed oder unknown."},
             },
             ["call_id"],
         ),
@@ -83,39 +82,63 @@ def build_tools_spec(base_url: str) -> List[dict]:
             "end_call",
             "Beende den Vorgang mit Status und nächster Aktion.",
             {
-                "call_id": {"type": "string"},
-                "status": {
-                    "type": "string",
-                    "enum": ["resolved", "partial", "needs_human"],
-                },
-                "next_action": {"type": "string"},
-                "summary": {"type": "string"},
+                "call_id": {"type": "string", "description": "Die ID dieses Anrufs."},
+                "status": {"type": "string", "description": "resolved, partial oder needs_human."},
+                "next_action": {"type": "string", "description": "Der nächste Schritt."},
+                "summary": {"type": "string", "description": "Kurze Zusammenfassung."},
             },
             ["call_id", "status"],
         ),
         tool(
             "get_case_context",
             "NUR als Notfall, falls eine Fallinformation fehlt: hole die Falldaten.",
-            {"call_id": {"type": "string"}},
+            {"call_id": {"type": "string", "description": "Die ID dieses Anrufs."}},
             ["call_id"],
         ),
     ]
 
 
+def sync_tools(base_url: str) -> List[str]:
+    """Create-or-update the webhook tools via /v1/convai/tools; return their tool_ids.
+
+    Idempotent by name: an existing tool with the same name is updated, not duplicated.
+    """
+    headers = _headers()
+    existing = httpx.get(f"{BASE}/v1/convai/tools", headers=headers, timeout=30)
+    existing.raise_for_status()
+    payload = existing.json()
+    items = payload.get("tools", payload if isinstance(payload, list) else [])
+    by_name = {}
+    for it in items:
+        name = (it.get("tool_config") or {}).get("name") or it.get("name")
+        if name:
+            by_name[name] = it.get("id") or it.get("tool_id")
+
+    tool_ids: List[str] = []
+    for cfg in build_tools_spec(base_url):
+        body = {"tool_config": cfg}
+        tid = by_name.get(cfg["name"])
+        if tid:
+            r = httpx.patch(f"{BASE}/v1/convai/tools/{tid}", headers=headers, json=body, timeout=30)
+        else:
+            r = httpx.post(f"{BASE}/v1/convai/tools", headers=headers, json=body, timeout=30)
+        r.raise_for_status()
+        tool_ids.append(r.json().get("id") or tid)
+    return tool_ids
+
+
 def sync_agent(voice_id: Optional[str] = None) -> dict:
-    """Update the configured EL agent with our prompt, first message, language, tools."""
+    """Update the EL agent with our prompt, first message, language, voice, and tools."""
     s = get_settings()
     if not s.elevenlabs_agent_id:
         raise ValueError("ELEVENLABS_AGENT_ID not configured")
 
-    prompt_cfg: dict = {
-        "prompt": AGENT_SYSTEM_PROMPT,
-        "tools": build_tools_spec(s.public_base_url),
-    }
+    tool_ids = sync_tools(s.public_base_url)
+
     agent_cfg: dict = {
         "first_message": FIRST_MESSAGE,
         "language": "de",
-        "prompt": prompt_cfg,
+        "prompt": {"prompt": AGENT_SYSTEM_PROMPT, "tool_ids": tool_ids},
     }
     tts_cfg = {"voice_id": voice_id} if voice_id else {}
     body = {"conversation_config": {"agent": agent_cfg, "tts": tts_cfg}}
@@ -127,7 +150,7 @@ def sync_agent(voice_id: Optional[str] = None) -> dict:
         timeout=30,
     )
     resp.raise_for_status()
-    return resp.json()
+    return {"tool_ids": tool_ids, **resp.json()}
 
 
 def place_call_via_elevenlabs(to_number: str, dynamic_variables: Dict[str, str]) -> dict:
