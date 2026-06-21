@@ -40,6 +40,10 @@ class Settings:
         self.email_from = os.getenv("EMAIL_FROM", "Nomos Voice Agent <noreply@example.com>")
         self.email_to_nomos = os.getenv("EMAIL_TO_NOMOS", "")
         self.email_to_test = os.getenv("EMAIL_TO_TEST", "")
+        self.smtp_host = os.getenv("SMTP_HOST", "smtp-mail.outlook.com")
+        self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        self.smtp_user = os.getenv("SMTP_USER", "")
+        self.smtp_password = os.getenv("SMTP_PASSWORD", "")
 
         # The keypad digit that reaches a human on the practice line's menu.
         # For the real practice clerk there is ONE menu; per-call overrides are used

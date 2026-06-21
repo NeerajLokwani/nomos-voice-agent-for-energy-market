@@ -19,7 +19,8 @@ def test_send_summary_email_mock_schreibt_outbox_und_log(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("EMAIL_MODE", "mock")
     monkeypatch.setenv("EMAIL_FROM", "Nomos <noreply@example.com>")
-    monkeypatch.setenv("EMAIL_TO_TEST", "test@example.com")
+    monkeypatch.setenv("EMAIL_TO_NOMOS", "felixkraaa@gmail.com")
+    monkeypatch.setenv("EMAIL_TO_TEST", "")
     monkeypatch.setenv("STORE_PATH", str(tmp_path / "data" / "results.json"))
     get_settings.cache_clear()
 
@@ -32,7 +33,7 @@ def test_send_summary_email_mock_schreibt_outbox_und_log(monkeypatch, tmp_path):
     assert ref == "mock-CASE-A"
     eml = (tmp_path / "outbox" / "CASE-A.eml").read_text(encoding="utf-8")
     message = Parser(policy=policy.default).parsestr(eml)
-    assert "To: test@example.com" in eml
+    assert "To: felixkraaa@gmail.com" in eml
     assert "Backoffice-Notiz" in message.get_body(preferencelist=("plain",)).get_content()
     assert (tmp_path / "outbox" / "CASE-A.html").read_text(encoding="utf-8") == "<p>CASE-A</p>"
 

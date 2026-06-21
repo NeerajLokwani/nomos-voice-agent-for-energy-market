@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import re
+import smtplib
+import ssl
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Optional
@@ -26,6 +28,8 @@ def send_summary_email(
     recipient = to or settings.email_to_nomos
     if mode == "resend":
         return _send_resend(settings, subject, body_text, body_html, recipient)
+    if mode == "smtp":
+        return _send_smtp(settings, subject, body_text, body_html, recipient)
     return _send_mock(settings, subject, body_text, body_html, recipient)
 
 
@@ -56,6 +60,30 @@ def _send_resend(settings, subject: str, body_text: str, body_html: Optional[str
     if not mail_id:
         raise ValueError("Resend-Antwort enthält keine id.")
     return str(mail_id)
+
+
+def _send_smtp(settings, subject: str, body_text: str, body_html: Optional[str], to: str) -> str:
+    if not settings.smtp_user or not settings.smtp_password:
+        raise ValueError("SMTP_USER oder SMTP_PASSWORD fehlt für EMAIL_MODE=smtp.")
+    if not to:
+        raise ValueError("EMAIL_TO_NOMOS fehlt für EMAIL_MODE=smtp.")
+
+    msg = EmailMessage()
+    msg["From"] = settings.smtp_user
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.set_content(body_text)
+    if body_html:
+        msg.add_alternative(body_html, subtype="html")
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+        server.ehlo()
+        server.starttls(context=context)
+        server.login(settings.smtp_user, settings.smtp_password)
+        server.send_message(msg)
+
+    return f"smtp-{settings.smtp_user}->{to}"
 
 
 def _send_mock(

@@ -17,7 +17,8 @@ from pathlib import Path
 
 from fastapi.responses import FileResponse
 
-from .telephony import build_call_twiml, place_call
+from .elevenlabs_client import place_call_via_elevenlabs
+from .telephony import build_call_twiml
 from .tools_routes import router as tools_router
 from .triggers import list_triggers
 
@@ -50,6 +51,11 @@ def health() -> dict:
         "practice_number_configured": bool(s.practice_clerk_number),
         "twilio_configured": bool(s.twilio_account_sid and s.twilio_from_number),
         "elevenlabs_configured": bool(s.elevenlabs_api_key and s.elevenlabs_agent_id),
+        "elevenlabs_phone_id_configured": bool(s.elevenlabs_phone_number_id),
+        "elevenlabs_phone_id_looks_valid": (
+            not s.elevenlabs_phone_number_id.startswith("+")
+            if s.elevenlabs_phone_number_id else False
+        ),
     }
 
 
@@ -106,17 +112,20 @@ def start_call(req: StartCallRequest) -> dict:
         started_at=datetime.now(timezone.utc).isoformat(),
     )
 
+    dynamic_variables["call_id"] = call_id
+
     if req.dry_run:
         set_live(call_id, status="dry_run")
         return {"call_id": call_id, "status": "dry_run", "dynamic_variables": dynamic_variables}
 
+    s = get_settings()
     try:
-        sid = place_call(call_id, ivr_digit=req.ivr_digit)
-    except ValueError as exc:  # compliance gate / missing config
+        resp = place_call_via_elevenlabs(s.practice_clerk_number, dynamic_variables)
+    except ValueError as exc:
         set_live(call_id, status="refused", error=str(exc))
         raise HTTPException(status_code=400, detail=str(exc))
-    set_live(call_id, status="dialing", twilio_sid=sid)
-    return {"call_id": call_id, "status": "dialing", "twilio_sid": sid}
+    set_live(call_id, status="dialing", elevenlabs_response=resp)
+    return {"call_id": call_id, "status": "dialing", "elevenlabs": resp}
 
 
 @app.api_route("/voice/{call_id}", methods=["GET", "POST"])

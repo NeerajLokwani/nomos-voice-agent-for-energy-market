@@ -220,13 +220,15 @@ def _confidence(
     items: list[ReconciliationItem],
     verification_status: str,
 ) -> float:
-    score = result.confidence
-    score -= 0.20 * sum(1 for item in items if item.kind == "abweichung")
-    score -= 0.25 * sum(1 for item in items if item.kind == "ungueltig")
-    score -= 0.03 * sum(1 for item in items if item.kind == "offen")
+    total = len(items) or 1
+    good = sum(1 for i in items if i.kind in {"verifiziert", "neu", "bestaetigt", "geaendert"})
+    base = result.confidence if result.confidence > 0 else (good / total)
+    base -= 0.15 * sum(1 for i in items if i.kind == "abweichung")
+    base -= 0.25 * sum(1 for i in items if i.kind == "ungueltig")
+    base -= 0.02 * sum(1 for i in items if i.kind == "offen")
     if verification_status == "mensch_noetig":
-        score = min(score, 0.4)
-    return round(max(0.0, min(1.0, score)), 2)
+        base = min(base, 0.4)
+    return round(max(0.0, min(1.0, base)), 2)
 
 
 def _expected_meter_status(case: dict) -> str:
@@ -268,15 +270,19 @@ def _has_text_overlap(left: str, right: str) -> bool:
     right_tokens = _meaningful_tokens(right)
     if not left_tokens or not right_tokens:
         return False
-    return bool(left_tokens & right_tokens)
+    overlap = left_tokens & right_tokens
+    min_size = min(len(left_tokens), len(right_tokens))
+    return len(overlap) >= max(2, min_size // 2)
 
 
 def _meaningful_tokens(value: str) -> set[str]:
+    stop = {"nicht", "keine", "werden", "wurde", "werden", "hatte", "haben",
+            "einer", "diese", "dieser", "dieses", "unter", "über", "durch"}
     tokens = {
         token.strip(".,;:'\"()[]!?").lower()
         for token in value.replace("/", " ").replace("-", " ").split()
     }
-    return {token for token in tokens if len(token) >= 5}
+    return {token for token in tokens if len(token) >= 5 and token not in stop}
 
 
 def _normalize(value: str) -> str:

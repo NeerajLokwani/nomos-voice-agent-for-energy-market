@@ -53,27 +53,25 @@ def test_start_call_dry_run_returns_dynamic_variables():
     assert dv["malo_id_spoken"].startswith("fünf, null, drei")
 
 
-def test_start_call_live_ruft_place_call_ohne_echten_anruf(monkeypatch):
+def test_start_call_live_ruft_elevenlabs_ohne_echten_anruf(monkeypatch):
     captured = {}
 
-    def fake_place_call(call_id, ivr_digit=None):
-        captured["call_id"] = call_id
-        captured["ivr_digit"] = ivr_digit
-        return "CA_TEST_SID"
+    def fake_el_call(to_number, dynamic_variables):
+        captured["to_number"] = to_number
+        captured["call_id"] = dynamic_variables.get("call_id")
+        return {"status": "ok", "conversation_id": "conv_TEST"}
 
-    monkeypatch.setattr("app.main.place_call", fake_place_call)
+    monkeypatch.setattr("app.main.place_call_via_elevenlabs", fake_el_call)
 
     r = client.post("/calls", json={"case_id": "CASE-C", "ivr_digit": "2", "dry_run": False})
 
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "dialing"
-    assert body["twilio_sid"] == "CA_TEST_SID"
+    assert body["elevenlabs"]["conversation_id"] == "conv_TEST"
     assert captured["call_id"] == body["call_id"]
-    assert captured["ivr_digit"] == "2"
     live = client.get(f"/calls/{body['call_id']}/live").json()
     assert live["status"] == "dialing"
-    assert live["twilio_sid"] == "CA_TEST_SID"
 
 
 def test_voice_endpoint_serves_twiml_for_prepared_call():
